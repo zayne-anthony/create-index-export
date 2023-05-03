@@ -1,0 +1,122 @@
+{
+	"name": "create-index-export",
+	"displayName": "Create Index Export",
+	"description": "Creates folder, named file, and index that contains export all in one command",
+	"version": "0.0.1",
+	"engines": {
+		"vscode": "^1.77.0"
+	},
+	"categories": [
+		"Other"
+	],
+	"activationEvents": [],
+	"main": "./out/extension.js",
+	"contributes": {
+		"commands": [
+			{
+				"command": "create.fromPath",
+				"title": "Create Index: From Absolute Path"
+			},
+			{
+				"command": "create.fromContext",
+				"title": "Create Index: From Input Name"
+			},
+			{
+				"command": "create.fromContextFolder",
+				"title": "Create Index: From Folder Name"
+			}
+		],
+		"menus": {
+			"commandPalette": [
+				{
+					"command": "create.fromContext",
+					"when": "false"
+				},
+				{
+					"command": "create.fromContextFolder",
+					"when": "false"
+				}
+			],
+			"explorer/context": [
+				{
+					"group": "Create Index",
+					"command": "create.fromContext",
+					"when": "explorerResourceIsFolder"
+				},
+				{
+					"group": "Create Index",
+					"command": "create.fromContextFolder",
+					"when": "explorerResourceIsFolder"
+				}
+			]
+		},
+		"keybindings": [
+			{
+				"command": "create.fromContext",
+				"when": "explorerViewletFocus && explorerResourceIsFolder",
+				"key": "ctrl+f1",
+				"mac": "cmd+f1"
+			},
+			{
+				"command": "create.fromContextFolder",
+				"when": "explorerViewletFocus && explorerResourceIsFolder",
+				"key": "ctrl+f2",
+				"mac": "cmd+f2"
+			}
+		],
+		"configuration": {
+			"title": "Create Index Export",
+			"properties": {
+				"create.defaultComponentPath": {
+					"type": [
+						"string",
+						"null"
+					],
+					"default": "./src/components",
+					"description": "Specifies the default folder path for components."
+				},
+				"create.defaultFileExtension": {
+					"type": "string",
+					"default": ".jsx",
+					"enum": [
+						".js",
+						".jsx",
+						".ts",
+						".tsx"
+					]
+				},
+				"create.preserveAlreadyCreatedFiles": {
+					"type": "boolean",
+					"default": true,
+					"description": "Override already made index or component files in folder. (Replaces content)"
+				},
+				"create.createCssFile": {
+					"type": "boolean",
+					"default": false,
+					"description": "Create a CSS file alongside the index and component file."
+				}
+			}
+		}
+	},
+	"scripts": {
+		"vscode:prepublish": "npm run compile",
+		"compile": "tsc -p ./",
+		"watch": "tsc -watch -p ./",
+		"pretest": "npm run compile && npm run lint",
+		"lint": "eslint src --ext ts",
+		"test": "node ./out/test/runTest.js"
+	},
+	"devDependencies": {
+		"@types/vscode": "^1.77.0",
+		"@types/glob": "^8.1.0",
+		"@types/mocha": "^10.0.1",
+		"@types/node": "16.x",
+		"@typescript-eslint/eslint-plugin": "^5.59.1",
+		"@typescript-eslint/parser": "^5.59.1",
+		"eslint": "^8.39.0",
+		"glob": "^8.1.0",
+		"mocha": "^10.2.0",
+		"typescript": "^5.0.4",
+		"@vscode/test-electron": "^2.3.0"
+	}
+}

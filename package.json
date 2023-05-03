@@ -3,6 +3,10 @@
 	"displayName": "Create Index Export",
 	"description": "Creates folder, named file, and index that contains export all in one command",
 	"version": "0.0.1",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/zayne-anthony/create-index-export"
+	},
 	"engines": {
 		"vscode": "^1.77.0"
 	},

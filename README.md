@@ -32,3 +32,8 @@ Initial release containing:
 - File extension changing (ts, tsx, js, jsx)
 - Creating component based on folder name, input inside folder, or by absolute path
 - Creating a CSS file with the rest of the component files
+
+### 1.1.0
+
+- Added command to create component folder from single component file. (Right click file)
+- Fixed camel-case files/folders getting uncamel-cased

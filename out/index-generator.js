@@ -129,13 +129,7 @@ class IndexGenerator {
         try {
             this.onCreate(absolutePath, componentName);
         }
-        catch (err) {
-            // if (err instanceof DuckExistError) {
-            //   this.window.showErrorMessage(`Duck: '${duckname}' already exists`);
-            // } else {
-            //   this.window.showErrorMessage(`Error: ${err.message}`);
-            // }
-        }
+        catch (err) { }
     }
     async onMoveToFolder(fileUri) {
         if (!fileUri) {
@@ -154,13 +148,7 @@ class IndexGenerator {
         try {
             this.onCreate(absolutePath, componentName);
         }
-        catch (err) {
-            // if (err instanceof DuckExistError) {
-            //   this.window.showErrorMessage(`Duck: '${duckname}' already exists`);
-            // } else {
-            //   this.window.showErrorMessage(`Error: ${err.message}`);
-            // }
-        }
+        catch (err) { }
     }
     dispose() {
         console.log("disposing...");

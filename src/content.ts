@@ -1,8 +1,3 @@
-// const componentContent = `export default function ${componentName}() { return true }`;
-// const componentEncode = new TextEncoder().encode(componentContent);
-// const indexContent = `export { default } from './${componentName}${this.extension}'`;
-// const indexEncode = new TextEncoder().encode(indexContent);
-
 import { TextEncoder } from "util";
 
 const returnEncoded = (content: string): Uint8Array => {
@@ -10,8 +5,7 @@ const returnEncoded = (content: string): Uint8Array => {
 };
 
 export const returnComponentContent = (name: string): Uint8Array => {
-	const capitalName =
-		name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
+	const capitalName = name.charAt(0).toUpperCase() + name.slice(1);
 
 	const content = `export default function ${capitalName}() {
     return (

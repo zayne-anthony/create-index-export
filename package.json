@@ -2,6 +2,7 @@
 	"name": "create-index-export",
 	"displayName": "Create Index Export",
 	"description": "Creates folder, named file, and index that contains export all in one command",
+	"publisher": "ZayneAnthony",
 	"version": "0.0.1",
 	"repository": {
 		"type": "git",
@@ -28,6 +29,10 @@
 			{
 				"command": "create.fromContextFolder",
 				"title": "Create Index: From Folder Name"
+			},
+			{
+				"command": "create.fromFile",
+				"title": "Create Index: From File"
 			}
 		],
 		"menus": {
@@ -38,6 +43,10 @@
 				},
 				{
 					"command": "create.fromContextFolder",
+					"when": "false"
+				},
+				{
+					"command": "create.fromFile",
 					"when": "false"
 				}
 			],
@@ -51,6 +60,11 @@
 					"group": "Create Index",
 					"command": "create.fromContextFolder",
 					"when": "explorerResourceIsFolder"
+				},
+				{
+					"group": "Create Index",
+					"command": "create.fromFile",
+					"when": "!explorerResourceIsFolder"
 				}
 			]
 		},

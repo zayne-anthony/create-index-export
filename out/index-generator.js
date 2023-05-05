@@ -117,12 +117,40 @@ class IndexGenerator {
             return;
         }
         const name = (0, path_1.basename)(componentPath);
-        const componentName = name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
+        let componentName = name.charAt(0).toUpperCase() + name.slice(1);
+        if (componentName.includes(".")) {
+            componentName = componentName.split(".")[0];
+        }
         const absolutePath = this.toAbsolutePath(componentPath.replace(name, componentName));
         // * Rename folder to capitalize, if exists
         if (folderPath && !createFolder) {
             vscode_1.workspace.fs.rename(folderPath, vscode_1.Uri.file(absolutePath));
         }
+        try {
+            this.onCreate(absolutePath, componentName);
+        }
+        catch (err) {
+            // if (err instanceof DuckExistError) {
+            //   this.window.showErrorMessage(`Duck: '${duckname}' already exists`);
+            // } else {
+            //   this.window.showErrorMessage(`Error: ${err.message}`);
+            // }
+        }
+    }
+    async onMoveToFolder(fileUri) {
+        if (!fileUri) {
+            return;
+        }
+        let componentPath = fileUri.fsPath;
+        const name = (0, path_1.basename)(componentPath);
+        let componentName = name.charAt(0).toUpperCase() + name.slice(1);
+        if (componentName.includes(".")) {
+            componentName = componentName.split(".")[0];
+        }
+        const absolutePath = this.toAbsolutePath(componentPath.replace(name, componentName));
+        const targetUri = vscode_1.Uri.joinPath(vscode_1.Uri.file(absolutePath), `${componentName}${this.extension}`);
+        await vscode_1.workspace.fs.copy(fileUri, targetUri);
+        vscode_1.workspace.fs.delete(fileUri);
         try {
             this.onCreate(absolutePath, componentName);
         }

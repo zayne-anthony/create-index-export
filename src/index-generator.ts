@@ -141,8 +141,11 @@ export class IndexGenerator {
 		}
 
 		const name = basename(componentPath);
-		const componentName =
-			name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
+		let componentName = name.charAt(0).toUpperCase() + name.slice(1);
+
+		if (componentName.includes(".")) {
+			componentName = componentName.split(".")[0];
+		}
 
 		const absolutePath = this.toAbsolutePath(
 			componentPath.replace(name, componentName)
@@ -155,13 +158,38 @@ export class IndexGenerator {
 
 		try {
 			this.onCreate(absolutePath, componentName);
-		} catch (err) {
-			// if (err instanceof DuckExistError) {
-			//   this.window.showErrorMessage(`Duck: '${duckname}' already exists`);
-			// } else {
-			//   this.window.showErrorMessage(`Error: ${err.message}`);
-			// }
+		} catch (err) {}
+	}
+
+	async onMoveToFolder(fileUri?: Uri) {
+		if (!fileUri) {
+			return;
 		}
+
+		let componentPath = fileUri.fsPath;
+
+		const name = basename(componentPath);
+		let componentName = name.charAt(0).toUpperCase() + name.slice(1);
+
+		if (componentName.includes(".")) {
+			componentName = componentName.split(".")[0];
+		}
+
+		const absolutePath = this.toAbsolutePath(
+			componentPath.replace(name, componentName)
+		);
+
+		const targetUri = Uri.joinPath(
+			Uri.file(absolutePath),
+			`${componentName}${this.extension}`
+		);
+
+		await workspace.fs.copy(fileUri, targetUri);
+		workspace.fs.delete(fileUri);
+
+		try {
+			this.onCreate(absolutePath, componentName);
+		} catch (err) {}
 	}
 
 	dispose(): void {

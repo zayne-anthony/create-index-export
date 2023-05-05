@@ -3,7 +3,7 @@
 	"displayName": "Create Index Export",
 	"description": "Creates folder, named file, and index that contains export all in one command",
 	"publisher": "ZayneAnthony",
-	"version": "0.0.1",
+	"version": "0.1.0",
 	"repository": {
 		"type": "git",
 		"url": "https://github.com/zayne-anthony/create-index-export"

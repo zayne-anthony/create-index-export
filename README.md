@@ -37,3 +37,7 @@ Initial release containing:
 
 - Added command to create component folder from single component file. (Right click file)
 - Fixed camel-case files/folders getting uncamel-cased
+
+#### Patch
+
+- Changed description for "Perserve Already Created Files"

@@ -112,7 +112,7 @@
 				"create.preserveAlreadyCreatedFiles": {
 					"type": "boolean",
 					"default": true,
-					"description": "Override already made index or component files in folder. (Replaces content)"
+					"description": "Doesn't override index/component file in created folder."
 				},
 				"create.createCssFile": {
 					"type": "boolean",

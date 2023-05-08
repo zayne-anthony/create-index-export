@@ -3,7 +3,7 @@
 	"displayName": "Create Index Export",
 	"description": "Creates component folders that export using a index file.",
 	"publisher": "ZayneAnthony",
-	"version": "0.1.1",
+	"version": "1.0.0",
 	"repository": {
 		"type": "git",
 		"url": "https://github.com/zayne-anthony/create-index-export"
@@ -12,7 +12,14 @@
 		"vscode": "^1.77.0"
 	},
 	"categories": [
-		"Other"
+		"Formatters"
+	],
+	"keywords": [
+		"react",
+		"structure",
+		"organiziation",
+		"refactor",
+		"components"
 	],
 	"activationEvents": [],
 	"main": "./out/extension.js",

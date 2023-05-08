@@ -3,7 +3,7 @@
 	"displayName": "Create Index Export",
 	"description": "Creates component folders that export using a index file.",
 	"publisher": "ZayneAnthony",
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"repository": {
 		"type": "git",
 		"url": "https://github.com/zayne-anthony/create-index-export"

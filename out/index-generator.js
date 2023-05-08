@@ -1,154 +1,191 @@
 "use strict";
-// TODO: Have command to turn all single files from components into index folder exports
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.IndexGenerator = void 0;
 const vscode_1 = require("vscode");
-const path_1 = require("path");
 const content_1 = require("./content");
-const util_1 = require("util");
+const path_util_1 = require("./util/path-util");
+const create_util_1 = require("./util/create-util");
 class IndexGenerator {
     constructor(workspaceRoot) {
         this.workspaceRoot = workspaceRoot;
-        this.extension = vscode_1.workspace.getConfiguration("create").get("defaultFileExtension") || ".jsx";
+        this.config = vscode_1.workspace.getConfiguration("create");
+        this.defaultExtension = this.config.get("defaultFileExtension") || "jsx";
+        this.defaultFolder = this.config.get("defaultComponentFolder") || "./src/components";
     }
-    toAbsolutePath(nameOrRelativePath) {
-        // if (/\/|\\/.test(nameOrRelativePath)) {
-        return (0, path_1.resolve)(this.workspaceRoot, nameOrRelativePath);
-        // }
+    toAbsoluteUri(nameOrPath) {
+        const workspaceUri = vscode_1.Uri.file(this.workspaceRoot);
+        if (/\/|\\/.test(nameOrPath)) {
+            return vscode_1.Uri.joinPath(workspaceUri, nameOrPath);
+        }
+        else {
+            return vscode_1.Uri.joinPath(workspaceUri, this.defaultFolder, nameOrPath);
+        }
     }
-    onValidate(name) {
-        if (!name) {
-            return "Name is required";
+    onValidate(input) {
+        if (!input) {
+            return "Path or Name is required";
         }
-        if ((0, path_1.basename)(name).includes(".") && name.length > 2) {
-            return "Don't add the extention, can change extension in settings";
-        }
-        if (name.includes(" ")) {
+        if (input.includes(" ")) {
             return "Spaces are not allowed";
         }
         return null;
     }
-    async onPrompt(inputPath) {
+    async onPrompt(prompt) {
         const options = {
             ignoreFocusOut: true,
-            prompt: inputPath
-                ? `Absolute path: './src/components/ComponentName'`
-                : `Name of component: 'Datepicker'`,
+            prompt,
             validateInput: this.onValidate,
         };
         return await vscode_1.window.showInputBox(options);
     }
-    async onCreate(absolutePath, componentName) {
-        const directoryUri = vscode_1.Uri.file(absolutePath);
-        const writeFileToPath = (fileName, content) => {
-            const fullPath = vscode_1.Uri.joinPath(directoryUri, fileName);
-            if (!content) {
-                content = new util_1.TextEncoder().encode("");
-            }
-            vscode_1.workspace.fs.writeFile(fullPath, content);
-        };
-        const preserveFiles = vscode_1.workspace
-            .getConfiguration("create")
-            .get("preserveAlreadyCreatedFiles");
-        const createCSSFile = vscode_1.workspace
-            .getConfiguration("create")
-            .get("createCssFile");
+    async onCreate(folderUri, fileName, extension) {
+        if (!folderUri)
+            return;
+        // Use default extension if one is not clarified
+        extension = `.${extension || this.defaultExtension}`;
+        // Check "Preserve" setting - Default "true"
+        const PRESERVE_FILES = this.config.get("preserveAlreadyCreatedFiles");
+        // Check "Create Css File" setting - Default "false"
+        const CREATE_CSS_FILE = this.config.get("createCssFile");
         try {
-            const indexFileName = `index${this.extension}`;
-            const indexContent = (0, content_1.returnIndexContent)(componentName, this.extension);
-            const componentFileName = `${componentName}${this.extension}`;
-            const componentContent = (0, content_1.returnComponentContent)(componentName);
-            const cssFileName = `${componentName.toLowerCase()}.css`;
-            if (preserveFiles) {
-                // * Checks if component file already exists
+            const INDEX_FILE = `index${extension}`;
+            const INDEX_CONTENT = (0, content_1.returnIndexContent)(fileName);
+            const COMPONENT_FILE = `${fileName}${extension}`;
+            const COMPONENT_CONTENT = (0, content_1.returnComponentContent)(fileName);
+            const CSS_FILE = `${fileName.toLowerCase()}.css`;
+            if (PRESERVE_FILES) {
+                // Checks if component file already exists
                 try {
-                    await vscode_1.workspace.fs.stat(vscode_1.Uri.joinPath(directoryUri, componentFileName));
-                    vscode_1.window.showErrorMessage("Component file already exists");
+                    await vscode_1.workspace.fs.stat((0, path_util_1.returnFilePath)(folderUri, COMPONENT_FILE));
                 }
                 catch {
-                    writeFileToPath(componentFileName, componentContent);
-                    vscode_1.window.showInformationMessage(`'${componentFileName}' successfully created`);
+                    (0, create_util_1.writeFileToPath)(folderUri, COMPONENT_FILE, COMPONENT_CONTENT);
                 }
-                // * Checks if index file already exists
+                // Checks if index file already exists
                 try {
-                    await vscode_1.workspace.fs.stat(vscode_1.Uri.joinPath(directoryUri, indexFileName));
-                    vscode_1.window.showErrorMessage("Index file already exists");
+                    await vscode_1.workspace.fs.stat((0, path_util_1.returnFilePath)(folderUri, INDEX_FILE));
                 }
                 catch {
-                    writeFileToPath(indexFileName, indexContent);
-                    vscode_1.window.showInformationMessage(`'${indexFileName}' successfully created`);
+                    (0, create_util_1.writeFileToPath)(folderUri, INDEX_FILE, INDEX_CONTENT);
                 }
-                // * Checks if css file already exists
-                if (createCSSFile) {
+                // Checks if css file already exists
+                if (CREATE_CSS_FILE) {
                     try {
-                        await vscode_1.workspace.fs.stat(vscode_1.Uri.joinPath(directoryUri, cssFileName));
-                        vscode_1.window.showErrorMessage("CSS file already exists");
+                        await vscode_1.workspace.fs.stat((0, path_util_1.returnFilePath)(folderUri, CSS_FILE));
                     }
                     catch {
-                        writeFileToPath(cssFileName);
-                        vscode_1.window.showInformationMessage(`'${cssFileName}' successfully created`);
+                        (0, create_util_1.writeFileToPath)(folderUri, CSS_FILE);
                     }
                 }
             }
             else {
-                writeFileToPath(componentFileName, componentContent);
-                writeFileToPath(indexFileName, indexContent);
-                if (createCSSFile) {
-                    writeFileToPath(cssFileName);
-                }
-                vscode_1.window.showInformationMessage(`'${componentFileName}' successfully created`);
+                (0, create_util_1.writeFileToPath)(folderUri, COMPONENT_FILE, COMPONENT_CONTENT);
+                (0, create_util_1.writeFileToPath)(folderUri, INDEX_FILE, INDEX_CONTENT);
+                if (CREATE_CSS_FILE)
+                    (0, create_util_1.writeFileToPath)(folderUri, CSS_FILE);
             }
+            vscode_1.window.showInformationMessage(`'${COMPONENT_FILE}' folder created`);
         }
         catch { }
     }
-    async onExecute(folderPath, createFolder) {
-        let componentPath;
-        if (folderPath && !createFolder) {
-            componentPath = folderPath.fsPath;
-        }
-        else if (folderPath && createFolder) {
-            const input = await this.onPrompt(false);
-            componentPath = input ? `${folderPath.fsPath}/${input}` : null;
+    async onFromPath(folderPath) {
+        let nameOrPath;
+        if (!folderPath) {
+            nameOrPath = await this.onPrompt(`Absolute path or component name - Default Path: ${this.defaultFolder}, can change this in settings`);
         }
         else {
-            componentPath = await this.onPrompt(true);
+            nameOrPath = await this.onPrompt(`Component name - Default Extension: .${this.defaultExtension}`);
         }
-        if (!componentPath) {
+        if (!nameOrPath)
             return;
-        }
-        const name = (0, path_1.basename)(componentPath);
-        let componentName = name.charAt(0).toUpperCase() + name.slice(1);
-        if (componentName.includes(".")) {
-            componentName = componentName.split(".")[0];
-        }
-        const absolutePath = this.toAbsolutePath(componentPath.replace(name, componentName));
-        // * Rename folder to capitalize, if exists
-        if (folderPath && !createFolder) {
-            vscode_1.workspace.fs.rename(folderPath, vscode_1.Uri.file(absolutePath));
-        }
+        // Get input name, capitalized name, and extension from input
+        const { componentName, extension } = (0, path_util_1.returnNamesFromPath)(nameOrPath);
+        // Get absolute folder path uri
+        const absoluteFolderUri = this.toAbsoluteUri(componentName);
         try {
-            this.onCreate(absolutePath, componentName);
+            this.onCreate(absoluteFolderUri, componentName, extension);
         }
         catch (err) { }
     }
-    async onMoveToFolder(fileUri) {
-        if (!fileUri) {
+    async onFromFolder(folderPath) {
+        if (!folderPath)
             return;
-        }
-        let componentPath = fileUri.fsPath;
-        const name = (0, path_1.basename)(componentPath);
-        let componentName = name.charAt(0).toUpperCase() + name.slice(1);
-        if (componentName.includes(".")) {
-            componentName = componentName.split(".")[0];
-        }
-        const absolutePath = this.toAbsolutePath(componentPath.replace(name, componentName));
-        const targetUri = vscode_1.Uri.joinPath(vscode_1.Uri.file(absolutePath), `${componentName}${this.extension}`);
-        await vscode_1.workspace.fs.copy(fileUri, targetUri);
-        vscode_1.workspace.fs.delete(fileUri);
+        // Get input name, capitalized name, and extension from input
+        const { componentName, extension } = (0, path_util_1.returnNamesFromPath)(folderPath.fsPath);
+        // Get absolute folder path uri
+        const absoluteFolderUri = this.toAbsoluteUri(componentName);
+        await vscode_1.workspace.fs.rename(folderPath, absoluteFolderUri);
         try {
-            this.onCreate(absolutePath, componentName);
+            this.onCreate(absoluteFolderUri, componentName, extension);
         }
         catch (err) { }
+    }
+    async onFromFile(filePath) {
+        if (!filePath)
+            return;
+        // Get input name, capitalized name, and extension from input
+        const { componentName, extension } = (0, path_util_1.returnNamesFromPath)(filePath.fsPath);
+        const nameWithExtension = `${componentName}.${extension || this.defaultExtension}`;
+        // Get absolute folder path uri
+        const absoluteFolderUri = this.toAbsoluteUri(componentName);
+        // Uri path of target folder
+        const targetUri = (0, path_util_1.returnFilePath)(absoluteFolderUri, nameWithExtension);
+        await vscode_1.workspace.fs.copy(filePath, targetUri);
+        vscode_1.workspace.fs.delete(filePath);
+        try {
+            this.onCreate(absoluteFolderUri, componentName, extension);
+        }
+        catch (err) { }
+    }
+    async onFromMultiple(folderPath) {
+        if (!folderPath) {
+            folderPath = await vscode_1.window.showInputBox({
+                ignoreFocusOut: true,
+                prompt: `Absolute Path or Blank for Default Path - '${this.defaultFolder}'`,
+            });
+        }
+        const filesFromInput = await this.onPrompt(`Component names (Seperate with comma) - Ex: 'Button,Table,Input'`);
+        if (!filesFromInput)
+            return;
+        const components = filesFromInput.split(",");
+        components.forEach((component) => {
+            // Get input name, capitalized name, and extension from input
+            const { componentName, extension } = (0, path_util_1.returnNamesFromPath)(component);
+            // Get absolute folder path uri
+            const absoluteFolderUri = this.toAbsoluteUri(componentName);
+            try {
+                this.onCreate(absoluteFolderUri, componentName, extension);
+            }
+            catch (err) { }
+        });
+    }
+    async onFromSingleFiles(folderPath) {
+        if (!folderPath)
+            return;
+        const folderFiles = await vscode_1.workspace.fs.readDirectory(folderPath);
+        // return folderFiles.forEach((file) => console.log(file));
+        folderFiles.forEach(async (file) => {
+            // Get input name, capitalized name, and extension from input
+            const [fileName, fileType] = file;
+            const { componentName, extension } = (0, path_util_1.returnNamesFromPath)(fileName);
+            // Return if extension does not equal default extension
+            // Return if folder
+            if (fileType !== 1 || extension !== this.defaultExtension) {
+                return;
+            }
+            // Get absolute folder path uri
+            const absoluteFolderUri = this.toAbsoluteUri(componentName);
+            // Get file path uri
+            const absoluteFileUri = this.toAbsoluteUri(fileName);
+            // Uri path of target folder
+            const targetUri = (0, path_util_1.returnFilePath)(absoluteFolderUri, `${fileName}`);
+            await vscode_1.workspace.fs.copy(absoluteFileUri, targetUri);
+            vscode_1.workspace.fs.delete(absoluteFileUri);
+            try {
+                this.onCreate(absoluteFolderUri, componentName, extension);
+            }
+            catch (err) { }
+        });
     }
     dispose() {
         console.log("disposing...");

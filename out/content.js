@@ -1,23 +1,18 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.returnIndexContent = exports.returnComponentContent = void 0;
-const util_1 = require("util");
-const returnEncoded = (content) => {
-    return new util_1.TextEncoder().encode(content);
-};
-const returnComponentContent = (name) => {
-    const capitalName = name.charAt(0).toUpperCase() + name.slice(1);
-    const content = `export default function ${capitalName}() {
-    return (
-      <>${capitalName}</>
-    )
-  }`;
-    return returnEncoded(content);
-};
-exports.returnComponentContent = returnComponentContent;
-const returnIndexContent = (name, extension) => {
-    const content = `export { default } from './${name}${extension}'`;
-    return returnEncoded(content);
+exports.returnComponentContent = exports.returnIndexContent = void 0;
+const returnIndexContent = (fileName) => {
+    const INDEX_CONTENT = `export { default } from './${fileName}'`;
+    return INDEX_CONTENT;
 };
 exports.returnIndexContent = returnIndexContent;
+const returnComponentContent = (fileName) => {
+    const COMPONENT_CONTENT = `export default function ${fileName}() {
+			return (
+				<>${fileName}</>
+			)
+		}`;
+    return COMPONENT_CONTENT;
+};
+exports.returnComponentContent = returnComponentContent;
 //# sourceMappingURL=content.js.map

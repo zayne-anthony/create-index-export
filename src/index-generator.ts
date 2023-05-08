@@ -1,195 +1,232 @@
-// TODO: Have command to turn all single files from components into index folder exports
-
 import { workspace, window, Uri } from "vscode";
-import { resolve, basename } from "path";
 import { returnComponentContent, returnIndexContent } from "./content";
-import { TextEncoder } from "util";
+import { returnFilePath, returnNamesFromPath } from "./util/path-util";
+import { writeFileToPath } from "./util/create-util";
 
 export class IndexGenerator {
-	private readonly extension: string =
-		workspace.getConfiguration("create").get("defaultFileExtension") || ".jsx";
+	private readonly config = workspace.getConfiguration("create");
+
+	private readonly defaultExtension: string =
+		this.config.get("defaultFileExtension") || "jsx";
+
+	private readonly defaultFolder: string =
+		this.config.get("defaultComponentFolder") || "./src/components";
 
 	constructor(private workspaceRoot: string) {}
 
-	toAbsolutePath(nameOrRelativePath: string): string {
-		// if (/\/|\\/.test(nameOrRelativePath)) {
-		return resolve(this.workspaceRoot, nameOrRelativePath);
-		// }
+	toAbsoluteUri(nameOrPath: string): Uri {
+		const workspaceUri = Uri.file(this.workspaceRoot);
+
+		if (/\/|\\/.test(nameOrPath)) {
+			return Uri.joinPath(workspaceUri, nameOrPath);
+		} else {
+			return Uri.joinPath(workspaceUri, this.defaultFolder, nameOrPath);
+		}
 	}
 
-	onValidate(name: string): string | null {
-		if (!name) {
-			return "Name is required";
+	onValidate(input: string): string | null {
+		if (!input) {
+			return "Path or Name is required";
 		}
 
-		if (basename(name).includes(".") && name.length > 2) {
-			return "Don't add the extention, can change extension in settings";
-		}
-
-		if (name.includes(" ")) {
+		if (input.includes(" ")) {
 			return "Spaces are not allowed";
 		}
 
 		return null;
 	}
 
-	async onPrompt(inputPath: boolean) {
+	async onPrompt(prompt: string) {
 		const options = {
 			ignoreFocusOut: true,
-			prompt: inputPath
-				? `Absolute path: './src/components/ComponentName'`
-				: `Name of component: 'Datepicker'`,
+			prompt,
 			validateInput: this.onValidate,
 		};
 
 		return await window.showInputBox(options);
 	}
 
-	async onCreate(absolutePath: string, componentName: string) {
-		const directoryUri = Uri.file(absolutePath);
+	async onCreate(folderUri: Uri, fileName: string, extension?: string) {
+		if (!folderUri) return;
 
-		const writeFileToPath = (fileName: string, content?: Uint8Array) => {
-			const fullPath = Uri.joinPath(directoryUri, fileName);
+		// Use default extension if one is not clarified
+		extension = `.${extension || this.defaultExtension}`;
 
-			if (!content) {
-				content = new TextEncoder().encode("");
-			}
+		// Check "Preserve" setting - Default "true"
+		const PRESERVE_FILES = this.config.get("preserveAlreadyCreatedFiles");
 
-			workspace.fs.writeFile(fullPath, content);
-		};
-
-		const preserveFiles = workspace
-			.getConfiguration("create")
-			.get("preserveAlreadyCreatedFiles");
-
-		const createCSSFile = workspace
-			.getConfiguration("create")
-			.get("createCssFile");
+		// Check "Create Css File" setting - Default "false"
+		const CREATE_CSS_FILE = this.config.get("createCssFile");
 
 		try {
-			const indexFileName = `index${this.extension}`;
-			const indexContent = returnIndexContent(componentName, this.extension);
-			const componentFileName = `${componentName}${this.extension}`;
-			const componentContent = returnComponentContent(componentName);
-			const cssFileName = `${componentName.toLowerCase()}.css`;
+			const INDEX_FILE = `index${extension}`;
+			const INDEX_CONTENT = returnIndexContent(fileName);
+			const COMPONENT_FILE = `${fileName}${extension}`;
+			const COMPONENT_CONTENT = returnComponentContent(fileName);
+			const CSS_FILE = `${fileName.toLowerCase()}.css`;
 
-			if (preserveFiles) {
-				// * Checks if component file already exists
+			if (PRESERVE_FILES) {
+				// Checks if component file already exists
 				try {
-					await workspace.fs.stat(
-						Uri.joinPath(directoryUri, componentFileName)
-					);
-					window.showErrorMessage("Component file already exists");
+					await workspace.fs.stat(returnFilePath(folderUri, COMPONENT_FILE));
 				} catch {
-					writeFileToPath(componentFileName, componentContent);
-					window.showInformationMessage(
-						`'${componentFileName}' successfully created`
-					);
+					writeFileToPath(folderUri, COMPONENT_FILE, COMPONENT_CONTENT);
 				}
 
-				// * Checks if index file already exists
+				// Checks if index file already exists
 				try {
-					await workspace.fs.stat(Uri.joinPath(directoryUri, indexFileName));
-					window.showErrorMessage("Index file already exists");
+					await workspace.fs.stat(returnFilePath(folderUri, INDEX_FILE));
 				} catch {
-					writeFileToPath(indexFileName, indexContent);
-					window.showInformationMessage(
-						`'${indexFileName}' successfully created`
-					);
+					writeFileToPath(folderUri, INDEX_FILE, INDEX_CONTENT);
 				}
 
-				// * Checks if css file already exists
-				if (createCSSFile) {
+				// Checks if css file already exists
+				if (CREATE_CSS_FILE) {
 					try {
-						await workspace.fs.stat(Uri.joinPath(directoryUri, cssFileName));
-						window.showErrorMessage("CSS file already exists");
+						await workspace.fs.stat(returnFilePath(folderUri, CSS_FILE));
 					} catch {
-						writeFileToPath(cssFileName);
-						window.showInformationMessage(
-							`'${cssFileName}' successfully created`
-						);
+						writeFileToPath(folderUri, CSS_FILE);
 					}
 				}
 			} else {
-				writeFileToPath(componentFileName, componentContent);
-				writeFileToPath(indexFileName, indexContent);
-				if (createCSSFile) {
-					writeFileToPath(cssFileName);
-				}
-
-				window.showInformationMessage(
-					`'${componentFileName}' successfully created`
-				);
+				writeFileToPath(folderUri, COMPONENT_FILE, COMPONENT_CONTENT);
+				writeFileToPath(folderUri, INDEX_FILE, INDEX_CONTENT);
+				if (CREATE_CSS_FILE) writeFileToPath(folderUri, CSS_FILE);
 			}
+
+			window.showInformationMessage(`'${COMPONENT_FILE}' folder created`);
 		} catch {}
 	}
 
-	async onExecute(folderPath?: Uri, createFolder?: boolean) {
-		let componentPath;
+	async onFromPath(folderPath?: Uri | undefined) {
+		let nameOrPath: string | undefined;
 
-		if (folderPath && !createFolder) {
-			componentPath = folderPath.fsPath;
-		} else if (folderPath && createFolder) {
-			const input = await this.onPrompt(false);
-			componentPath = input ? `${folderPath.fsPath}/${input}` : null;
+		if (!folderPath) {
+			nameOrPath = await this.onPrompt(
+				`Absolute path or component name - Default Path: ${this.defaultFolder}, can change this in settings`
+			);
 		} else {
-			componentPath = await this.onPrompt(true);
+			nameOrPath = await this.onPrompt(
+				`Component name - Default Extension: .${this.defaultExtension}`
+			);
 		}
 
-		if (!componentPath) {
-			return;
-		}
+		if (!nameOrPath) return;
 
-		const name = basename(componentPath);
-		let componentName = name.charAt(0).toUpperCase() + name.slice(1);
+		// Get input name, capitalized name, and extension from input
+		const { componentName, extension } = returnNamesFromPath(nameOrPath);
 
-		if (componentName.includes(".")) {
-			componentName = componentName.split(".")[0];
-		}
-
-		const absolutePath = this.toAbsolutePath(
-			componentPath.replace(name, componentName)
-		);
-
-		// * Rename folder to capitalize, if exists
-		if (folderPath && !createFolder) {
-			workspace.fs.rename(folderPath, Uri.file(absolutePath));
-		}
+		// Get absolute folder path uri
+		const absoluteFolderUri = this.toAbsoluteUri(componentName);
 
 		try {
-			this.onCreate(absolutePath, componentName);
+			this.onCreate(absoluteFolderUri, componentName, extension);
 		} catch (err) {}
 	}
 
-	async onMoveToFolder(fileUri?: Uri) {
-		if (!fileUri) {
-			return;
-		}
+	async onFromFolder(folderPath?: Uri | undefined) {
+		if (!folderPath) return;
 
-		let componentPath = fileUri.fsPath;
+		// Get input name, capitalized name, and extension from input
+		const { componentName, extension } = returnNamesFromPath(folderPath.fsPath);
 
-		const name = basename(componentPath);
-		let componentName = name.charAt(0).toUpperCase() + name.slice(1);
+		// Get absolute folder path uri
+		const absoluteFolderUri = this.toAbsoluteUri(componentName);
 
-		if (componentName.includes(".")) {
-			componentName = componentName.split(".")[0];
-		}
-
-		const absolutePath = this.toAbsolutePath(
-			componentPath.replace(name, componentName)
-		);
-
-		const targetUri = Uri.joinPath(
-			Uri.file(absolutePath),
-			`${componentName}${this.extension}`
-		);
-
-		await workspace.fs.copy(fileUri, targetUri);
-		workspace.fs.delete(fileUri);
+		await workspace.fs.rename(folderPath, absoluteFolderUri);
 
 		try {
-			this.onCreate(absolutePath, componentName);
+			this.onCreate(absoluteFolderUri, componentName, extension);
 		} catch (err) {}
+	}
+
+	async onFromFile(filePath?: Uri | undefined) {
+		if (!filePath) return;
+
+		// Get input name, capitalized name, and extension from input
+		const { componentName, extension } = returnNamesFromPath(filePath.fsPath);
+
+		const nameWithExtension = `${componentName}.${
+			extension || this.defaultExtension
+		}`;
+
+		// Get absolute folder path uri
+		const absoluteFolderUri = this.toAbsoluteUri(componentName);
+
+		// Uri path of target folder
+		const targetUri = returnFilePath(absoluteFolderUri, nameWithExtension);
+
+		await workspace.fs.copy(filePath, targetUri);
+		workspace.fs.delete(filePath);
+
+		try {
+			this.onCreate(absoluteFolderUri, componentName, extension);
+		} catch (err) {}
+	}
+
+	async onFromMultiple(folderPath?: Uri | string) {
+		if (!folderPath) {
+			folderPath = await window.showInputBox({
+				ignoreFocusOut: true,
+				prompt: `Absolute Path or Blank for Default Path - '${this.defaultFolder}'`,
+			});
+		}
+
+		const filesFromInput = await this.onPrompt(
+			`Component names (Seperate with comma) - Ex: 'Button,Table,Input'`
+		);
+
+		if (!filesFromInput) return;
+
+		const components: Array<string> = filesFromInput.split(",");
+
+		components.forEach((component) => {
+			// Get input name, capitalized name, and extension from input
+			const { componentName, extension } = returnNamesFromPath(component);
+
+			// Get absolute folder path uri
+			const absoluteFolderUri = this.toAbsoluteUri(componentName);
+
+			try {
+				this.onCreate(absoluteFolderUri, componentName, extension);
+			} catch (err) {}
+		});
+	}
+
+	async onFromSingleFiles(folderPath?: Uri) {
+		if (!folderPath) return;
+
+		const folderFiles = await workspace.fs.readDirectory(folderPath);
+
+		// return folderFiles.forEach((file) => console.log(file));
+
+		folderFiles.forEach(async (file) => {
+			// Get input name, capitalized name, and extension from input
+			const [fileName, fileType] = file;
+			const { componentName, extension } = returnNamesFromPath(fileName);
+
+			// Return if extension does not equal default extension
+			// Return if folder
+			if (fileType !== 1 || extension !== this.defaultExtension) {
+				return;
+			}
+
+			// Get absolute folder path uri
+			const absoluteFolderUri = this.toAbsoluteUri(componentName);
+
+			// Get file path uri
+			const absoluteFileUri = this.toAbsoluteUri(fileName);
+
+			// Uri path of target folder
+			const targetUri = returnFilePath(absoluteFolderUri, `${fileName}`);
+
+			await workspace.fs.copy(absoluteFileUri, targetUri);
+			workspace.fs.delete(absoluteFileUri);
+
+			try {
+				this.onCreate(absoluteFolderUri, componentName, extension);
+			} catch (err) {}
+		});
 	}
 
 	dispose(): void {

@@ -1,53 +1,72 @@
 import { commands, workspace, ExtensionContext } from "vscode";
 import { IndexGenerator } from "./index-generator";
 import { getWorkspaceFolder } from "./util/workspace-util";
-import { getCurrentPathUri } from "./util/uri-util";
-
-// TODO: Be able to right click a file and create folder with index
+import { getCurrentPathUri } from "./util/path-util";
 
 export function activate(context: ExtensionContext) {
 	const workspaceRoot: string = getWorkspaceFolder(workspace.workspaceFolders);
 	const generator = new IndexGenerator(workspaceRoot);
 
-	// * Creates files in folder from context menu
-	let fromContextFolder = commands.registerCommand(
-		"create.fromContextFolder",
-		async (uri) => {
-			const folder = await getCurrentPathUri(uri);
+	// * Creates folder from path or name
+	// Type: Command | Input: Absolute Path
+	// Type: Command | Input: Component Name
+	let fromPath = commands.registerCommand("create.fromPath", async (uri) => {
+		const currentPath = await getCurrentPathUri(uri);
 
-			generator.onExecute(folder, false);
-		}
-	);
-
-	context.subscriptions.push(fromContextFolder);
-
-	// * Creates folder & files from context menu
-	let fromContext = commands.registerCommand(
-		"create.fromContext",
-		async (uri) => {
-			const folder = await getCurrentPathUri(uri);
-
-			generator.onExecute(folder, true);
-		}
-	);
-
-	context.subscriptions.push(fromContext);
-
-	// * Creates folder & files from absolute path
-	let fromPath = commands.registerCommand("create.fromPath", () => {
-		generator.onExecute();
+		generator.onFromPath(currentPath);
 	});
 
 	context.subscriptions.push(fromPath);
 
-	// * Creates folder from component file
-	let fromFile = commands.registerCommand("create.fromFile", async (uri) => {
-		const file = await getCurrentPathUri(uri);
+	// * Creates file from folder name
+	// Type: Context | On: Folder
+	let fromFolder = commands.registerCommand(
+		"create.fromFolder",
+		async (uri) => {
+			const folderPath = await getCurrentPathUri(uri);
 
-		generator.onMoveToFolder(file);
+			generator.onFromFolder(folderPath);
+		}
+	);
+
+	context.subscriptions.push(fromFolder);
+
+	// * Creates folder from component file
+	// Type: Context | On: File
+	let fromFile = commands.registerCommand("create.fromFile", async (uri) => {
+		const filePath = await getCurrentPathUri(uri);
+
+		generator.onFromFile(filePath);
 	});
 
 	context.subscriptions.push(fromFile);
+
+	// * Creates multiple component folders from array
+	// Type: Context | On: Folder | Input: Component Names
+	// Type: Command | Input: Absolute Path | Input: Component Names
+	let fromMultiple = commands.registerCommand(
+		"create.fromMultiple",
+		async (uri) => {
+			const folderPath = await getCurrentPathUri(uri);
+
+			generator.onFromMultiple(folderPath);
+		}
+	);
+
+	context.subscriptions.push(fromMultiple);
+
+	// * Creates all single component files into component folders
+	// Type: Context | On: Folder
+	let fromSingleFiles = commands.registerCommand(
+		"create.fromSingleFiles",
+		async (uri) => {
+			const folderPath = await getCurrentPathUri(uri);
+
+			generator.onFromSingleFiles(folderPath);
+		}
+	);
+
+	context.subscriptions.push(fromSingleFiles);
 
 	context.subscriptions.push(generator);
 }

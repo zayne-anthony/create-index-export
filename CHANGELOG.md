@@ -1,9 +1,9 @@
 # Change Log
 
-All notable changes to the "create-index-export" extension will be documented in this file.
+## 1.0.0 - Initial Release
 
-Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
-
-## [Unreleased]
-
-- Initial release
+- Create Index: Component
+- Create Index: Multiple Components
+- Create Index: From Folder
+- Create Index: From File
+- Create Index: From Component(s)

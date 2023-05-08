@@ -5,7 +5,6 @@ const vscode_1 = require("vscode");
 const index_generator_1 = require("./index-generator");
 const workspace_util_1 = require("./util/workspace-util");
 const path_util_1 = require("./util/path-util");
-// TODO: Update Readme and Republish Extension?
 function activate(context) {
     const workspaceRoot = (0, workspace_util_1.getWorkspaceFolder)(vscode_1.workspace.workspaceFolders);
     const generator = new index_generator_1.IndexGenerator(workspaceRoot);
@@ -18,29 +17,29 @@ function activate(context) {
     });
     context.subscriptions.push(fromPath);
     // * Creates file from folder name
-    // Type: Context | From: Folder
+    // Type: Context | On: Folder
     let fromFolder = vscode_1.commands.registerCommand("create.fromFolder", async (uri) => {
         const folderPath = await (0, path_util_1.getCurrentPathUri)(uri);
         generator.onFromFolder(folderPath);
     });
     context.subscriptions.push(fromFolder);
     // * Creates folder from component file
-    // Type: Context | From: File
+    // Type: Context | On: File
     let fromFile = vscode_1.commands.registerCommand("create.fromFile", async (uri) => {
         const filePath = await (0, path_util_1.getCurrentPathUri)(uri);
         generator.onFromFile(filePath);
     });
     context.subscriptions.push(fromFile);
     // * Creates multiple component folders from array
-    // Type: Context | From: Folder
-    // Type: Command | Input: Absolute Path
+    // Type: Context | On: Folder | Input: Component Names
+    // Type: Command | Input: Absolute Path | Input: Component Names
     let fromMultiple = vscode_1.commands.registerCommand("create.fromMultiple", async (uri) => {
         const folderPath = await (0, path_util_1.getCurrentPathUri)(uri);
         generator.onFromMultiple(folderPath);
     });
     context.subscriptions.push(fromMultiple);
     // * Creates all single component files into component folders
-    // Type: Context | From: Folder
+    // Type: Context | On: Folder
     let fromSingleFiles = vscode_1.commands.registerCommand("create.fromSingleFiles", async (uri) => {
         const folderPath = await (0, path_util_1.getCurrentPathUri)(uri);
         generator.onFromSingleFiles(folderPath);

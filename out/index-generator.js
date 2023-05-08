@@ -14,6 +14,7 @@ class IndexGenerator {
     }
     toAbsoluteUri(nameOrPath) {
         const workspaceUri = vscode_1.Uri.file(this.workspaceRoot);
+        nameOrPath = vscode_1.workspace.asRelativePath(nameOrPath);
         if (/\/|\\/.test(nameOrPath)) {
             return vscode_1.Uri.joinPath(workspaceUri, nameOrPath);
         }
@@ -91,17 +92,20 @@ class IndexGenerator {
     async onFromPath(folderPath) {
         let nameOrPath;
         if (!folderPath) {
-            nameOrPath = await this.onPrompt(`Absolute path or component name - Default Path: ${this.defaultFolder}, can change this in settings`);
+            nameOrPath = await this.onPrompt(`Absolute path or component name - Default Path: ${this.defaultFolder}`);
         }
         else {
-            nameOrPath = await this.onPrompt(`Component name - Default Extension: .${this.defaultExtension}`);
+            const input = await this.onPrompt(`Component name - Default Extension: .${this.defaultExtension}`);
+            if (!input)
+                return;
+            nameOrPath = (0, path_util_1.returnFilePath)(folderPath, input).fsPath;
         }
         if (!nameOrPath)
             return;
         // Get input name, capitalized name, and extension from input
-        const { componentName, extension } = (0, path_util_1.returnNamesFromPath)(nameOrPath);
+        const { componentPath, componentName, extension } = (0, path_util_1.returnNamesFromPath)(nameOrPath);
         // Get absolute folder path uri
-        const absoluteFolderUri = this.toAbsoluteUri(componentName);
+        const absoluteFolderUri = this.toAbsoluteUri(componentPath);
         try {
             this.onCreate(absoluteFolderUri, componentName, extension);
         }
@@ -111,9 +115,9 @@ class IndexGenerator {
         if (!folderPath)
             return;
         // Get input name, capitalized name, and extension from input
-        const { componentName, extension } = (0, path_util_1.returnNamesFromPath)(folderPath.fsPath);
+        const { componentPath, componentName, extension } = (0, path_util_1.returnNamesFromPath)(folderPath.fsPath);
         // Get absolute folder path uri
-        const absoluteFolderUri = this.toAbsoluteUri(componentName);
+        const absoluteFolderUri = this.toAbsoluteUri(componentPath);
         await vscode_1.workspace.fs.rename(folderPath, absoluteFolderUri);
         try {
             this.onCreate(absoluteFolderUri, componentName, extension);
@@ -124,10 +128,10 @@ class IndexGenerator {
         if (!filePath)
             return;
         // Get input name, capitalized name, and extension from input
-        const { componentName, extension } = (0, path_util_1.returnNamesFromPath)(filePath.fsPath);
+        const { componentPath, componentName, extension } = (0, path_util_1.returnNamesFromPath)(filePath.fsPath);
         const nameWithExtension = `${componentName}.${extension || this.defaultExtension}`;
         // Get absolute folder path uri
-        const absoluteFolderUri = this.toAbsoluteUri(componentName);
+        const absoluteFolderUri = this.toAbsoluteUri(componentPath);
         // Uri path of target folder
         const targetUri = (0, path_util_1.returnFilePath)(absoluteFolderUri, nameWithExtension);
         await vscode_1.workspace.fs.copy(filePath, targetUri);
@@ -138,11 +142,16 @@ class IndexGenerator {
         catch (err) { }
     }
     async onFromMultiple(folderPath) {
+        let nameOrPath;
         if (!folderPath) {
-            folderPath = await vscode_1.window.showInputBox({
-                ignoreFocusOut: true,
-                prompt: `Absolute Path or Blank for Default Path - '${this.defaultFolder}'`,
-            });
+            nameOrPath =
+                (await vscode_1.window.showInputBox({
+                    ignoreFocusOut: true,
+                    prompt: `Absolute Path or Blank for Default Path - '${this.defaultFolder}'`,
+                })) || this.defaultFolder;
+        }
+        else {
+            nameOrPath = folderPath.fsPath;
         }
         const filesFromInput = await this.onPrompt(`Component names (Seperate with comma) - Ex: 'Button,Table,Input'`);
         if (!filesFromInput)
@@ -151,8 +160,9 @@ class IndexGenerator {
         components.forEach((component) => {
             // Get input name, capitalized name, and extension from input
             const { componentName, extension } = (0, path_util_1.returnNamesFromPath)(component);
+            const componentPath = (0, path_util_1.returnFilePath)(nameOrPath, componentName);
             // Get absolute folder path uri
-            const absoluteFolderUri = this.toAbsoluteUri(componentName);
+            const absoluteFolderUri = this.toAbsoluteUri(componentPath.fsPath);
             try {
                 this.onCreate(absoluteFolderUri, componentName, extension);
             }
@@ -162,9 +172,8 @@ class IndexGenerator {
     async onFromSingleFiles(folderPath) {
         if (!folderPath)
             return;
-        const folderFiles = await vscode_1.workspace.fs.readDirectory(folderPath);
-        // return folderFiles.forEach((file) => console.log(file));
-        folderFiles.forEach(async (file) => {
+        const filesInFolder = await vscode_1.workspace.fs.readDirectory(folderPath);
+        filesInFolder.forEach(async (file) => {
             // Get input name, capitalized name, and extension from input
             const [fileName, fileType] = file;
             const { componentName, extension } = (0, path_util_1.returnNamesFromPath)(fileName);
@@ -174,9 +183,9 @@ class IndexGenerator {
                 return;
             }
             // Get absolute folder path uri
-            const absoluteFolderUri = this.toAbsoluteUri(componentName);
+            const absoluteFolderUri = (0, path_util_1.returnFilePath)(folderPath, componentName);
             // Get file path uri
-            const absoluteFileUri = this.toAbsoluteUri(fileName);
+            const absoluteFileUri = (0, path_util_1.returnFilePath)(folderPath, fileName);
             // Uri path of target folder
             const targetUri = (0, path_util_1.returnFilePath)(absoluteFolderUri, `${fileName}`);
             await vscode_1.workspace.fs.copy(absoluteFileUri, targetUri);

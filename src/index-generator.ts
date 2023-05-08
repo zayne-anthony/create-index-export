@@ -17,6 +17,8 @@ export class IndexGenerator {
 	toAbsoluteUri(nameOrPath: string): Uri {
 		const workspaceUri = Uri.file(this.workspaceRoot);
 
+		nameOrPath = workspace.asRelativePath(nameOrPath);
+
 		if (/\/|\\/.test(nameOrPath)) {
 			return Uri.joinPath(workspaceUri, nameOrPath);
 		} else {
@@ -103,21 +105,25 @@ export class IndexGenerator {
 
 		if (!folderPath) {
 			nameOrPath = await this.onPrompt(
-				`Absolute path or component name - Default Path: ${this.defaultFolder}, can change this in settings`
+				`Absolute path or component name - Default Path: ${this.defaultFolder}`
 			);
 		} else {
-			nameOrPath = await this.onPrompt(
+			const input = await this.onPrompt(
 				`Component name - Default Extension: .${this.defaultExtension}`
 			);
+			if (!input) return;
+
+			nameOrPath = returnFilePath(folderPath, input).fsPath;
 		}
 
 		if (!nameOrPath) return;
 
 		// Get input name, capitalized name, and extension from input
-		const { componentName, extension } = returnNamesFromPath(nameOrPath);
+		const { componentPath, componentName, extension } =
+			returnNamesFromPath(nameOrPath);
 
 		// Get absolute folder path uri
-		const absoluteFolderUri = this.toAbsoluteUri(componentName);
+		const absoluteFolderUri = this.toAbsoluteUri(componentPath);
 
 		try {
 			this.onCreate(absoluteFolderUri, componentName, extension);
@@ -128,10 +134,12 @@ export class IndexGenerator {
 		if (!folderPath) return;
 
 		// Get input name, capitalized name, and extension from input
-		const { componentName, extension } = returnNamesFromPath(folderPath.fsPath);
+		const { componentPath, componentName, extension } = returnNamesFromPath(
+			folderPath.fsPath
+		);
 
 		// Get absolute folder path uri
-		const absoluteFolderUri = this.toAbsoluteUri(componentName);
+		const absoluteFolderUri = this.toAbsoluteUri(componentPath);
 
 		await workspace.fs.rename(folderPath, absoluteFolderUri);
 
@@ -144,14 +152,16 @@ export class IndexGenerator {
 		if (!filePath) return;
 
 		// Get input name, capitalized name, and extension from input
-		const { componentName, extension } = returnNamesFromPath(filePath.fsPath);
+		const { componentPath, componentName, extension } = returnNamesFromPath(
+			filePath.fsPath
+		);
 
 		const nameWithExtension = `${componentName}.${
 			extension || this.defaultExtension
 		}`;
 
 		// Get absolute folder path uri
-		const absoluteFolderUri = this.toAbsoluteUri(componentName);
+		const absoluteFolderUri = this.toAbsoluteUri(componentPath);
 
 		// Uri path of target folder
 		const targetUri = returnFilePath(absoluteFolderUri, nameWithExtension);
@@ -164,12 +174,17 @@ export class IndexGenerator {
 		} catch (err) {}
 	}
 
-	async onFromMultiple(folderPath?: Uri | string) {
+	async onFromMultiple(folderPath?: Uri | undefined) {
+		let nameOrPath: string;
+
 		if (!folderPath) {
-			folderPath = await window.showInputBox({
-				ignoreFocusOut: true,
-				prompt: `Absolute Path or Blank for Default Path - '${this.defaultFolder}'`,
-			});
+			nameOrPath =
+				(await window.showInputBox({
+					ignoreFocusOut: true,
+					prompt: `Absolute Path or Blank for Default Path - '${this.defaultFolder}'`,
+				})) || this.defaultFolder;
+		} else {
+			nameOrPath = folderPath.fsPath;
 		}
 
 		const filesFromInput = await this.onPrompt(
@@ -184,8 +199,10 @@ export class IndexGenerator {
 			// Get input name, capitalized name, and extension from input
 			const { componentName, extension } = returnNamesFromPath(component);
 
+			const componentPath = returnFilePath(nameOrPath, componentName);
+
 			// Get absolute folder path uri
-			const absoluteFolderUri = this.toAbsoluteUri(componentName);
+			const absoluteFolderUri = this.toAbsoluteUri(componentPath.fsPath);
 
 			try {
 				this.onCreate(absoluteFolderUri, componentName, extension);
@@ -193,14 +210,12 @@ export class IndexGenerator {
 		});
 	}
 
-	async onFromSingleFiles(folderPath?: Uri) {
+	async onFromSingleFiles(folderPath?: Uri | undefined) {
 		if (!folderPath) return;
 
-		const folderFiles = await workspace.fs.readDirectory(folderPath);
+		const filesInFolder = await workspace.fs.readDirectory(folderPath);
 
-		// return folderFiles.forEach((file) => console.log(file));
-
-		folderFiles.forEach(async (file) => {
+		filesInFolder.forEach(async (file) => {
 			// Get input name, capitalized name, and extension from input
 			const [fileName, fileType] = file;
 			const { componentName, extension } = returnNamesFromPath(fileName);
@@ -212,10 +227,10 @@ export class IndexGenerator {
 			}
 
 			// Get absolute folder path uri
-			const absoluteFolderUri = this.toAbsoluteUri(componentName);
+			const absoluteFolderUri = returnFilePath(folderPath, componentName);
 
 			// Get file path uri
-			const absoluteFileUri = this.toAbsoluteUri(fileName);
+			const absoluteFileUri = returnFilePath(folderPath, fileName);
 
 			// Uri path of target folder
 			const targetUri = returnFilePath(absoluteFolderUri, `${fileName}`);

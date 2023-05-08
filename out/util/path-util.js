@@ -15,13 +15,18 @@ const getCurrentPathUri = async (uri) => {
 };
 exports.getCurrentPathUri = getCurrentPathUri;
 const returnFilePath = (folderPath, fileName) => {
+    if (typeof folderPath === "string") {
+        folderPath = vscode_1.Uri.file(folderPath);
+    }
     return vscode_1.Uri.joinPath(folderPath, fileName);
 };
 exports.returnFilePath = returnFilePath;
 const returnNamesFromPath = (filePath) => {
-    const [name, extension] = (0, path_1.basename)(filePath).split(".");
+    const fileBaseName = (0, path_1.basename)(filePath);
+    const [name, extension] = fileBaseName.split(".");
     const componentName = name.charAt(0).toUpperCase() + name.slice(1);
-    return { name, componentName, extension };
+    const componentPath = filePath.replace(fileBaseName, componentName);
+    return { name, componentPath, componentName, extension };
 };
 exports.returnNamesFromPath = returnNamesFromPath;
 //# sourceMappingURL=path-util.js.map

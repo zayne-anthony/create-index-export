@@ -49,6 +49,10 @@ This extension contributes the following settings:
 
 - `create.defaultComponentFolder`: Default absolute path towards your components to quick create
   - Default: `'./src/components'`
+- `create.defaultFileExtension`: Default file extension to use when one is not typed.
+  - Default: `'.jsx'`
+- `create.defaultContent`: Whether or not to apply default content to the component file.
+  - Default: `true`
 - `create.preserveAlreadyCreatedFiles`: Override already made files in folder. (Replace content)
   - Default: `true`
 - `create.createCssFile`: Create a CSS file alongside index and component file.

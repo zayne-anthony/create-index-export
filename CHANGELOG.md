@@ -11,3 +11,9 @@
 ### 1.0.1 - Patch
 
 - Fixed all commands defaulting to `Default Component Folder` setting
+
+### 1.1.1 - Default Content Updates
+
+- Added Typescript default content for `.ts`/`.tsx` file formats
+- Added new `defaultContent` setting, to either include or leave out default content in component files
+- Changed spaces in default content to `\n` (new lines) and `\t` (tabs) respectively

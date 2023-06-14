@@ -1,5 +1,5 @@
 import { workspace, window, Uri } from "vscode";
-import { returnComponentContent, returnIndexContent } from "./content";
+import { returnFileContent, returnIndexContent } from "./content";
 import { returnFilePath, returnNamesFromPath } from "./util/path-util";
 import { writeFileToPath } from "./util/create-util";
 
@@ -11,6 +11,9 @@ export class IndexGenerator {
 
 	private readonly defaultFolder: string =
 		this.config.get("defaultComponentFolder") || "./src/components";
+
+	private readonly defaultContent: boolean =
+		this.config.get("defaultContent") || true;
 
 	constructor(private workspaceRoot: string) {}
 
@@ -64,7 +67,9 @@ export class IndexGenerator {
 			const INDEX_FILE = `index${extension}`;
 			const INDEX_CONTENT = returnIndexContent(fileName);
 			const COMPONENT_FILE = `${fileName}${extension}`;
-			const COMPONENT_CONTENT = returnComponentContent(fileName);
+			const COMPONENT_CONTENT = this.defaultContent
+				? returnFileContent(fileName, extension)
+				: "";
 			const CSS_FILE = `${fileName.toLowerCase()}.css`;
 
 			if (PRESERVE_FILES) {

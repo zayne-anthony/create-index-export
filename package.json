@@ -1,7 +1,7 @@
 {
 	"name": "create-index-export",
 	"displayName": "Create Index Export",
-	"description": "Creates component folders that export using a index file.",
+	"description": "Creates react component folders that export using a index file.",
 	"publisher": "ZayneAnthony",
 	"version": "1.0.1",
 	"repository": {
@@ -126,10 +126,15 @@
 						"tsx"
 					]
 				},
+				"create.defaultContent": {
+					"type": "boolean",
+					"default": true,
+					"description": "Apply default content inside component file."
+				},
 				"create.preserveAlreadyCreatedFiles": {
 					"type": "boolean",
 					"default": true,
-					"description": "Doesn't override index/component file content in created folder."
+					"description": "Don't override index/component file content in created folder."
 				},
 				"create.createCssFile": {
 					"type": "boolean",

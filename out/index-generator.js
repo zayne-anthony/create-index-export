@@ -11,6 +11,7 @@ class IndexGenerator {
         this.config = vscode_1.workspace.getConfiguration("create");
         this.defaultExtension = this.config.get("defaultFileExtension") || "jsx";
         this.defaultFolder = this.config.get("defaultComponentFolder") || "./src/components";
+        this.defaultContent = this.config.get("defaultContent") || true;
     }
     toAbsoluteUri(nameOrPath) {
         const workspaceUri = vscode_1.Uri.file(this.workspaceRoot);
@@ -52,7 +53,9 @@ class IndexGenerator {
             const INDEX_FILE = `index${extension}`;
             const INDEX_CONTENT = (0, content_1.returnIndexContent)(fileName);
             const COMPONENT_FILE = `${fileName}${extension}`;
-            const COMPONENT_CONTENT = (0, content_1.returnComponentContent)(fileName);
+            const COMPONENT_CONTENT = this.defaultContent
+                ? (0, content_1.returnFileContent)(fileName, extension)
+                : "";
             const CSS_FILE = `${fileName.toLowerCase()}.css`;
             if (PRESERVE_FILES) {
                 // Checks if component file already exists
